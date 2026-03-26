@@ -1,19 +1,40 @@
-**/migrations/**
-!**/migrations
-!**/migrations/__init__.py
-**__pycache__/
-# static/
-static/CACHE/ 
-# media/
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+env/
+venv/
+myenv/
+
+# Django database
+db.sqlite3
+
+# Environment variables
 .env
-passenger_wsgi.py
-# media
-tmp/
+
+# Static & media
+media/
+staticfiles/
+static/CACHE/
+
+# Logs
+logs/
+*.log
+
+# Keys
 private_key.pem
 public_key.pem
-db.sqlite3
-media/
-static/
-myenv/
-settings.py/
-logs/django.log
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+tmp/
+
+# Django migrations (keep only __init__.py)
+**/migrations/*
+!**/migrations/__init__.py
