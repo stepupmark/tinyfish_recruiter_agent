@@ -8,6 +8,7 @@ from core.choice_fields import (
                     EmploymentTypeChoices,
                     UserStatusChoices,
                     ApplicationStatus,
+                    InterviewStatus,
                 )
 
 
@@ -87,4 +88,27 @@ class JobApplication(CommonModel):
         db_table='jobapplication'
         verbose_name = 'JobApplication'
         verbose_name_plural = 'JobApplications'
+        ordering = ["-created_at"]
+
+
+
+class InterviewSchedule(CommonModel):
+    job = models.ForeignKey(JobPosting,on_delete=models.CASCADE,related_name="job_interviews")
+    application = models.ForeignKey(JobApplication,on_delete=models.CASCADE,related_name="job_application_interviews")
+    candidate = models.ForeignKey(CustomUserModel,on_delete=models.CASCADE,related_name="candidate_interview")
+
+    interview_date = models.DateField()
+    interview_time = models.TimeField()
+
+    interview_status = models.CharField(max_length=20,choices=InterviewStatus.choices,default=InterviewStatus.SCHEDULED)
+    notes = models.TextField(null=True, blank=True)
+
+
+    def __str__(self):
+        return f"{self.job.job_title} - {self.candidate.full_name} - {self.interview_date}- Time {self.interview_time}"
+    
+    class Meta:
+        db_table='interviewschedule'
+        verbose_name = 'InterviewSchedule'
+        verbose_name_plural = 'InterviewSchedules'
         ordering = ["-created_at"]
