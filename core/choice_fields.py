@@ -10,3 +10,16 @@ class UserRoles(models.TextChoices):
 class UserStatusChoices(models.TextChoices):
     ACTIVE = 'active', _('Active')
     INACTIVE = 'in_active', _("In Active")
+
+
+class EmploymentTypeChoices(models.TextChoices):
+    FULLTIME = 'full_time', _('Full Time')
+    PARTTIME = 'part_time', _('Part Time')
+    INTERNSHIP = 'internship', _('Intership')
+
+
+class ApplicationStatus(models.TextChoices):
+    APPLIED = 'applied', _('Applied')
+    SHORTLISTED = 'shortlisted', _('Shortlisted')
+    REJECTED = 'rejected', _('Rejected')
+    HIRED = 'hired', _('Hired')
