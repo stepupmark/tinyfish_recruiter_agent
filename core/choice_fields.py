@@ -23,3 +23,11 @@ class ApplicationStatus(models.TextChoices):
     SHORTLISTED = 'shortlisted', _('Shortlisted')
     REJECTED = 'rejected', _('Rejected')
     HIRED = 'hired', _('Hired')
+
+
+class InterviewStatus(models.TextChoices):
+    SCHEDULED = 'scheduled', _('Scheduled')
+    COMPLETED = 'completed', _('Completed')
+    SELECTED = 'selected', _('Selected')
+    REJECTED = 'rejected', _('Rejected')
+    RESCHEDULED = 'rescheduled', _('Rescheduled')
