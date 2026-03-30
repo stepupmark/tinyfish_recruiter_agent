@@ -17,7 +17,7 @@ from core.choice_fields import (
 
 
 class Recruiter(CommonModel):
-    user = models.ForeignKey(CustomUserModel,on_delete=models.CASCADE,related_name="recruiter")
+    user = models.OneToOneField(CustomUserModel,on_delete=models.CASCADE,related_name="recruiter")
     company_name = models.CharField(max_length=200)
     company_email = models.EmailField(null=True,blank=True,unique=True)
     gst_number = models.CharField(max_length=15, null=True, blank=True)
@@ -56,6 +56,7 @@ class JobPosting(CommonModel):
     # Job DETAILS
     job_title = models.CharField(max_length=200)
     job_description = models.TextField(null=True,blank=True)
+    job_description_file = models.FileField(upload_to="recruiters/job_descriptions/",null=True,blank=True)
     job_location = models.CharField(max_length=200)
     employment_type = models.CharField(max_length=50,choices=EmploymentTypeChoices.choices,default=EmploymentTypeChoices.FULLTIME)
     salary_range = models.CharField(max_length=100, null=True, blank=True)

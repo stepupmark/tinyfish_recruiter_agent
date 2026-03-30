@@ -7,6 +7,7 @@ from rest_framework import status
 from core.general import SerializerError
 from django.db import transaction
 from rest_framework import serializers
+from django.contrib.auth import authenticate
 from authentication.models import(
                 CustomUserModel
 
@@ -24,12 +25,17 @@ from core.utlis import (
                 CustomPageNumberPagination,
                 success_response,
                 error_response,
+                get_tokens_for_user
                 
             )
 from .validators import (
                 RecruiterRegisterationValidator,
                 CandidateRegistrationValidator,
+                LoginValidator,
 
+            )
+from .serializers import (
+                CandidateProfileSerializer,
             )
 
 # Create your views here.
@@ -85,6 +91,7 @@ class RecruiterRegisterAPIView(APIView):
 class CandidateRegisterAPIView(APIView):
     authentication_classes =[]
     permission_classes =[]
+    pagination_class = CustomPageNumberPagination
     
     def post(self,request):
         try:
@@ -117,4 +124,66 @@ class CandidateRegisterAPIView(APIView):
         except Exception as e:
             return Response(error_response(message="Something went wrong",errors=str(e)),status=status.HTTP_400_BAD_REQUEST)
 
+
     
+    def get(self,request):
+        try:
+            candidates_obj = CandidateProfile.objects.all()
+            
+            paginator =self.pagination_class()
+            paginated_qs = paginator.paginate_queryset(candidates_obj,request)
+            serializer = CandidateProfileSerializer(paginated_qs,many=True,context={"request":request})
+            paginated_response = paginator.get_paginated_response(serializer.data)
+
+            return Response(success_response(message="Successfully fetch Candidate Details",data=paginated_response.data),status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(error_response(message="Something went wrong",errors=str(e)),status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class LoginAPIView(APIView):
+
+    def post(self, request):
+        try:
+            # ---------------- VALIDATION ----------------
+            validator = LoginValidator(data=request.data)
+
+            if not validator.is_valid():
+                return Response(
+                    error_response(
+                        message="Validation error",
+                        errors=validator.errors
+                    ),
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            validated_data = validator.validated_data
+            email = validated_data.get("email")
+            role = validated_data.get("role")
+            password = validated_data.get("password")
+
+            # ---------------- USER CHECK ----------------
+            user_obj = CustomUserModel.objects.filter(email=email,role=role).first()
+
+            if not user_obj:
+                return Response(error_response(message="User not found",errors="No account exists with the provided email and role."),status=status.HTTP_404_NOT_FOUND)
+
+            # ---------------- PASSWORD CHECK ----------------
+            if not user_obj.check_password(password):
+                return Response(error_response(message="Invalid credentials",errors="Password is incorrect."),status=status.HTTP_401_UNAUTHORIZED)
+
+            # ---------------- TOKENS ----------------
+            tokens = get_tokens_for_user(user_obj)
+
+            return Response(
+                success_response(message="Login successful",data={
+                        "user_id": user_obj.id,
+                        "email": user_obj.email,
+                        "role": user_obj.role,
+                        "tokens": tokens
+                    }
+                ),status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(error_response(message="Something went wrong",errors=str(e)),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
