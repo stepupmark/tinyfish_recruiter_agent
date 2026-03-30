@@ -14,7 +14,7 @@ class CandidateProfile(CommonModel):
     profile_photo = models.ImageField(upload_to="candidate_photos/", null=True, blank=True)
 
     def __str__(self):
-        return f"{self.user.full_name}- Current JOB Role {self.current_job_title}"
+        return f"{self.user.full_name}- Current JOB Role- {self.current_job_title}"
     
     class Meta:
         db_table='candidateprofile'
