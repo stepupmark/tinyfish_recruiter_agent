@@ -137,3 +137,23 @@ class CandidateRegistrationValidator(serializers.Serializer):
         if CustomUserModel.objects.filter(mobile=value).exists():
             raise serializers.ValidationError("Mobile Already Exists")
         return value
+    
+
+class LoginValidator(serializers.Serializer):
+    email = serializers.EmailField(required=True,allow_null=False,allow_blank=False,error_messages={
+        'required':'Email is Required',
+        'null':'Email cannot be null',
+        'blank':'Email cannot be Blank',
+        'invalid': 'Enter a valid email address'
+    })
+
+    role = serializers.CharField(required=True,allow_null=False,allow_blank=False,error_messages={
+        'required':'Role is Required',
+        'null':'Role cannot be null',
+        'blank':'Role cannot be Blank',
+    })
+    password = serializers.CharField(required=True,allow_null=False,allow_blank=False,error_messages={
+        'required':'Email is Required',
+        'null':'Email cannot be null',
+        'blank':'Email cannot be Blank',
+    })
