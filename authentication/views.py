@@ -85,7 +85,7 @@ class RecruiterRegisterAPIView(APIView):
             return Response(success_response(message="Registeration Successfully",data={"user_id":customer_user.id}),status=status.HTTP_200_OK)
 
         except Exception as e:
-            return Response(error_response(message="Something Went wrong",errors=str(e)),status=status.HTTP_400_BAD_REQUEST)
+            return Response(error_response(message="Something Went wrong",errors=str(e)),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
 class CandidateRegisterAPIView(APIView):
@@ -122,7 +122,7 @@ class CandidateRegisterAPIView(APIView):
 
 
         except Exception as e:
-            return Response(error_response(message="Something went wrong",errors=str(e)),status=status.HTTP_400_BAD_REQUEST)
+            return Response(error_response(message="Something went wrong",errors=str(e)),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
     
@@ -138,7 +138,7 @@ class CandidateRegisterAPIView(APIView):
             return Response(success_response(message="Successfully fetch Candidate Details",data=paginated_response.data),status=status.HTTP_200_OK)
 
         except Exception as e:
-            return Response(error_response(message="Something went wrong",errors=str(e)),status=status.HTTP_400_BAD_REQUEST)
+            return Response(error_response(message="Something went wrong",errors=str(e)),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 

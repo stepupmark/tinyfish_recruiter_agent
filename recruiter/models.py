@@ -36,6 +36,7 @@ class Recruiter(CommonModel):
     company_size = models.CharField(max_length=50, null=True, blank=True)
     industry = models.CharField(max_length=100, null=True, blank=True)
     company_description = models.TextField(null=True, blank=True)
+    status = models.CharField(max_length=10,choices=UserStatusChoices.choices,default=UserStatusChoices.ACTIVE)
 
     is_verified = models.BooleanField(default=False)
 

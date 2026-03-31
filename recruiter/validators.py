@@ -35,4 +35,5 @@ class RecruiterJobPostValidator(serializers.Serializer):
 
     salary_range = serializers.CharField(required=False,allow_null=True,allow_blank=True)
     skills_required = serializers.CharField(required=False,allow_null=True,allow_blank=True)
+    status = serializers.CharField(required=False,allow_null=True,allow_blank=True)
 

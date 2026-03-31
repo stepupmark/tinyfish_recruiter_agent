@@ -38,12 +38,12 @@ class RecruiterJobPostAPIView(APIView):
             
 
         except Exception as e:
-            return Response(error_response(message="Something Went wrong",errors=str(e)),status=status.HTTP_400_BAD_REQUEST)
+            return Response(error_response(message="Something Went wrong",errors=str(e)),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
     def get(self,request):
         try:
             user = request.user
-            job_posts = JobPosting.objects.filter(recruiter=user.recruiter).select_related('recruiter','recruiter__user').order_by('-created_at')
+            job_posts = JobPosting.objects.filter(recruiter=user.recruiter,is_active=True).select_related('recruiter','recruiter__user').order_by('-created_at')
             paginator = self.pagination_class()
             paginated_qs = paginator.paginate_queryset(job_posts,request)
             serializer = JobPostingSerializer(paginated_qs,many=True,context={"request":request})
@@ -52,7 +52,59 @@ class RecruiterJobPostAPIView(APIView):
             return Response(success_response(message="Recruiter Job Posts",data=paginated_response.data),status=status.HTTP_200_OK)
         
         except Exception as e:
-            return Response(error_response(message="Something Went wrong",errors=str(e)),status=status.HTTP_400_BAD_REQUEST)
+            return Response(error_response(message="Something Went wrong",errors=str(e)),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         
 
+class  RecruiterJobPostDetailAPIView(APIView):
+    authentication_classes = []
+    permission_classes =[]
+
+    def get(self,request,id):
+        try:
+            user = request.user
+            job_post = JobPosting.objects.filter(id=id,is_active=True).first()
+            if not job_post:
+                return Response(error_response(message="Job Post Not Found",errors="No Job Post Found"),status=status.HTTP_404_NOT_FOUND)
+
+            serialier = JobPostingSerializer(job_post,context={"request":request})
+
+            return Response(success_response(message="Recruiter Job Post Detail",data=serialier.data),status=status.HTTP_200_OK)
+
+
+        except Exception as e:
+            return Response(error_response(message="Something Went wrong",errors=str(e)),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+    def put(self,request,id):
+        try:
+            job_post_detail = JobPosting.objects.filter(id=id).first()
+            if not job_post_detail:
+                return Response(error_response(message="Job Post Not Found",errors="No Job Post Found"),status=status.HTTP_404_NOT_FOUND)
+            validator = RecruiterJobPostValidator(data=request.data,partial=True)
+            if not validator.is_valid():
+                return Response(error_response(message="Validation Failed",errors=validator.errors),status=status.HTTP_400_BAD_REQUEST)
+            validated_data = validator.validated_data
+            for field, value in validated_data.items():
+                setattr(job_post_detail,field,value)
+            job_post_detail.save()
+            # Updated Data
+            serializer = JobPostingSerializer(job_post_detail,context={"request":request})
+            return Response(success_response(message="Job Post Updated Successfully",data=serializer.data),status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(error_response(message="Something Went wrong",errors=str(e)),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+    def delete(self,request,id):
+        try:
+            job_post_detail = JobPosting.objects.filter(id=id,is_active=True).first()
+            if not job_post_detail:
+                return Response(error_response(message="Job Post Not Found",errors="No Job Post Found"),status=status.HTTP_404_NOT_FOUND)
+            
+            job_post_detail.is_active=False
+            job_post_detail.save()
+            return Response(success_response(message="Job Post Deleted Successfully",data={}),status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(error_response(message="Something Went wrong",errors=str(e)),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
