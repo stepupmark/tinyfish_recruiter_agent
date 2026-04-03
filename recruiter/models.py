@@ -91,12 +91,13 @@ class JobApplication(CommonModel):
         verbose_name = 'JobApplication'
         verbose_name_plural = 'JobApplications'
         ordering = ["-created_at"]
+        constraints  = [models.UniqueConstraint(fields=['job','user'],name='unique_job_user_application')]
 
 
 
 class InterviewSchedule(CommonModel):
     job = models.ForeignKey(JobPosting,on_delete=models.CASCADE,related_name="job_interviews")
-    application = models.ForeignKey(JobApplication,on_delete=models.CASCADE,related_name="job_application_interviews")
+    application = models.OneToOneField(JobApplication,on_delete=models.CASCADE,related_name="job_application_interviews")
     candidate = models.ForeignKey(CustomUserModel,on_delete=models.CASCADE,related_name="candidate_interview")
 
     interview_date = models.DateField()
