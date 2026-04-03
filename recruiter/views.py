@@ -5,6 +5,7 @@ from core.utlis import error_response,success_response,CustomPageNumberPaginatio
 from rest_framework import status
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
+from core.permissions import IsRecruiter
 from .models import (
         Recruiter,
         JobPosting,
@@ -16,6 +17,7 @@ from .validators import (
     )
 from .serializers import (
         JobPostingSerializer,
+        RecruiterJobApplicationSerializer,
     )
 
 # Create your views here.
@@ -106,5 +108,34 @@ class  RecruiterJobPostDetailAPIView(APIView):
             job_post_detail.save()
             return Response(success_response(message="Job Post Deleted Successfully",data={}),status=status.HTTP_200_OK)
 
+        except Exception as e:
+            return Response(error_response(message="Something Went wrong",errors=str(e)),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
+class RecruiterJobApplicationsAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated,IsRecruiter]
+    pagination_class = CustomPageNumberPagination
+
+    def get(self,request,job_id):
+        try:
+            user = request.user
+            recruiter = getattr(user,"recruiter",None)
+            if recruiter is None:
+                return Response(error_response(message="Permission denied", errors="User is not a recruiter"),status=status.HTTP_403_FORBIDDEN)
+            job_applications = JobApplication.objects.filter(job__id = job_id,
+                                                             job__recruiter = user.recruiter,
+                                                             is_active = True).select_related('job','user','user__candidate_profile')
+            if not job_applications.exists():
+                return Response(success_response(message="No Job Applications Found",data={}),status=status.HTTP_200_OK)
+            
+            paginator = self.pagination_class()
+            paginated_data = paginator.paginate_queryset(job_applications,request)
+            serializer = RecruiterJobApplicationSerializer(paginated_data,many=True,context={"request":request})
+            paginated_response = paginator.get_paginated_response(serializer.data)
+
+            return Response(success_response(message="Candidate Job Applications",data=paginated_response.data),status=status.HTTP_200_OK)
+            
         except Exception as e:
             return Response(error_response(message="Something Went wrong",errors=str(e)),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
