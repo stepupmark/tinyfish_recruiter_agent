@@ -5,5 +5,6 @@ from recruiter import views
 urlpatterns = [
     path('job-post/',views.RecruiterJobPostAPIView.as_view(),name='recruiter-job-post'),
     path('job-post-detail/<str:id>/',views.RecruiterJobPostDetailAPIView.as_view(),name='recruiter-job-post-detail'),
+    path('job-applications/<str:job_id>/',views.RecruiterJobApplicationsAPIView.as_view(),name='candidate-job-applications'),
     
 ]
