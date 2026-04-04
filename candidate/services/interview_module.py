@@ -8,9 +8,11 @@ from rest_framework import status
 env = environ.Env()
 
 INTERVIEW_MODULE_MODEL=env('INTERVIEW_MODULE_MODEL')
+INTERVIEW_QUESTION_MODULE=env('INTERVIEW_QUESTION_MODULE')
+INTERVIEW_ANSWER_MODULE=env('INTERVIEW_ANSWER_MODULE')
 
 
-def start_interview(resume):
+def interview_resume_analysis(resume):
     try:
         if not resume:
             return {"success": False, "error": "Resume not found"}
@@ -37,3 +39,6 @@ def start_interview(resume):
             "success": False,
             "error": str(e)
         }
+    
+
+# def start_interview_process(session_id,selected_roles):
