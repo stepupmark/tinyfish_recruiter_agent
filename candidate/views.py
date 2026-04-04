@@ -27,7 +27,7 @@ from .services.n8n_service import (
         candidate_resume_analysis,
     )
 from .services.interview_module import (
-        start_interview,
+        interview_resume_analysis,
     )
 from core.choice_fields import (
                     EmploymentTypeChoices,
@@ -199,14 +199,14 @@ class CandidateInterviewAPIView(APIView):
 
                 return Response(
                     error_response(
-                        message="Interview not completed",
-                        errors=f"{hours} hours {minutes} minutes left"
+                        message=f"Interview has not started yet. {hours} hours {minutes} minutes remaining.",
+                        errors=f"{hours} hours {minutes} minutes remaining"
                     ),
                     status=status.HTTP_400_BAD_REQUEST
                 )
             elif interview_datetime <= current_time <= grace_time:
 
-                interview_module= start_interview(resume)
+                interview_module= interview_resume_analysis(resume)
 
                 if not interview_module["success"]:
                     return Response(
@@ -239,12 +239,36 @@ class CandidateInterviewAPIView(APIView):
 
 
 class CandidateScheduleInterviewAPIView(APIView):
-    authentication_classes = []
-    permission_classes = []
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def post(self,request):
         try:
+            user = request.user
+            print(user.id)
             validator =  InterviewScheduleValidator(data=request.data,context={"request":request})
+            if not validator.is_valid():
+                return Response(error_response(message="Validation Error",errors=validator.errors),status=status.HTTP_400_BAD_REQUEST)
+            
+            validated_data =validator.validated_data
+
+            if InterviewSchedule.objects.filter(application=validated_data['job_application']).exists():
+                return Response(error_response(message="Already Interview Scheduled",errors="interview already scheduled"),status=status.HTTP_400_BAD_REQUEST)
+            
+            job_application = JobApplication.objects.filter(id=validated_data['job_application']).first()
+            if not job_application:
+                return Response(error_response(message="Invalid Job Application Id",errors="invalid job application"),status=status.HTTP_400_BAD_REQUEST)
+            
+            
+            schedule_interview = InterviewSchedule.objects.create(application_id=job_application.id,
+                                                                  job_id=job_application.job.id,
+                                                                  candidate=user,
+                                                                  interview_date=validated_data['interview_date'],
+                                                                  interview_time=validated_data['interview_time']
+                                                                  )
+
+            return Response(success_response(message="Already Interview Scheduled",data=schedule_interview.id),status=status.HTTP_200_OK)
+            
             
 
         except Exception as e:
