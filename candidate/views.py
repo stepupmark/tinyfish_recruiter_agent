@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
+from rest_framework.generics import GenericAPIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -21,13 +22,18 @@ from .serializers import (
 from .validators import (
         JobApplicationValidator,
         InterviewScheduleValidator,
+        InterviewProcessValidator,
+        AnswerEvaluationValidator,
         
     )
 from .services.n8n_service import (
         candidate_resume_analysis,
+        candidate_schedule_interview_workflow,
     )
 from .services.interview_module import (
         interview_resume_analysis,
+        start_interview_process,
+        evaluate_interview_answer,
     )
 from core.choice_fields import (
                     EmploymentTypeChoices,
@@ -209,13 +215,17 @@ class CandidateInterviewAPIView(APIView):
                 interview_module= interview_resume_analysis(resume)
 
                 if not interview_module["success"]:
-                    return Response(
-                        error_response(
-                            message="Interview service failed",
-                            errors=interview_module["error"]
-                        ),
-                        status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                    )
+                    return Response(error_response(message="Interview service failed",errors=interview_module["error"]),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+                # Updating the session id from interview process
+
+                data = interview_module.get("data", {})
+
+
+                interview_schedule.interview_session_id = data.get("session_id")
+
+                interview_schedule.save()
+
 
                 return Response(
                     success_response(
@@ -259,17 +269,107 @@ class CandidateScheduleInterviewAPIView(APIView):
             if not job_application:
                 return Response(error_response(message="Invalid Job Application Id",errors="invalid job application"),status=status.HTTP_400_BAD_REQUEST)
             
+            resume_file = job_application.resume
+            interview_datetime = datetime.combine(validated_data['interview_date'],validated_data['interview_time']).strftime("%Y-%m-%d %H:%M")
+
+            candidate_schedule_interview = candidate_schedule_interview_workflow(resume_file,interview_datetime,str(job_application.id))
+            candidate_interview_data = candidate_schedule_interview.get("data",{})
             
             schedule_interview = InterviewSchedule.objects.create(application_id=job_application.id,
                                                                   job_id=job_application.job.id,
                                                                   candidate=user,
                                                                   interview_date=validated_data['interview_date'],
-                                                                  interview_time=validated_data['interview_time']
+                                                                  interview_time=validated_data['interview_time'],
+                                                                  interview_link = candidate_interview_data.get("interview_link"),
                                                                   )
 
-            return Response(success_response(message="Already Interview Scheduled",data=schedule_interview.id),status=status.HTTP_200_OK)
+            return Response(success_response(message="Already Interview Scheduled",data={"id":schedule_interview.id,"interview_link":candidate_interview_data.get("interview_link")}),status=status.HTTP_200_OK)
             
             
+
+        except Exception as e:
+            return Response(error_response(message="Something went wrong",errors=str(e)),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
+
+class CandidateInterviewProcessBeginAPIView(APIView):
+    authentication_classes =[]
+    permission_classes = []
+
+    def post(self,request):
+        try:
+            validator =InterviewProcessValidator(data=request.data)
+            
+            if not validator.is_valid():
+                return Response(error_response(message="Validation Error",errors=validator.errors),status=status.HTTP_400_BAD_REQUEST)
+            
+            validated_data = validator.validated_data
+
+            session_id = validated_data.get('session_id')
+            candidate_role = validated_data.get('candidate_role')
+
+
+            interview_process = start_interview_process(session_id,candidate_role)
+
+            if not interview_process['success']:
+                return Response(error_response(message="Interview Service Failed",errors=interview_process['error']),status=status.HTTP_400_BAD_REQUEST)
+            
+            question_data = interview_process['data']['question']
+
+            return Response(success_response(message="Interview Process Begins",data={
+                                                                "total_questions":interview_process['data']['total_questions'],
+                                                                "question_no":1,
+                                                                "question":question_data['question'],
+                                                                "difficulty_level":question_data['difficulty'],
+                                                                # "interview_process":interview_process,
+                                                            }),status=status.HTTP_200_OK)
+
+
+        
+        except Exception as e:
+            return Response(error_response(message="Something went wrong",errors=str(e)),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class AnswerEvaluationAPIView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self,request):
+        try:
+            validator = AnswerEvaluationValidator(data=request.data)
+            if not validator.is_valid():
+                return Response(error_response(message="Validation Error",errors=validator.errors),status=status.HTTP_400_BAD_REQUEST)
+            validated_data = validator.validated_data
+
+            session_id = validated_data.get("session_id")
+            answer = validated_data.get("answer")
+
+            evaluate_answer = evaluate_interview_answer(session_id,answer)
+
+            if not evaluate_answer['success']:
+                return Response(error_response(message="Interview Service Failed",errors=evaluate_answer['error']),status=status.HTTP_400_BAD_REQUEST)
+            
+            data = evaluate_answer.get('data', {})
+
+            scorecard =  data.get('scorecard')
+            overall_score = scorecard.get('overall_score') if scorecard else None
+
+            if scorecard:
+                interview_schedule = InterviewSchedule.objects.filter(interview_session_id=session_id).first()
+                interview_schedule.scored_card=overall_score
+                interview_schedule.clarity=scorecard.get('comm_metrics').get('clarity')
+                interview_schedule.confidence=scorecard.get('comm_metrics').get('confidence')
+                interview_schedule.interview_status = InterviewStatus.COMPLETED
+                interview_schedule.save()
+
+            return Response(success_response(message="Interview Process",data={
+                                                                # "response":evaluate_answer,
+                                                                "question_no":data.get('current_index'),
+                                                                "total_questions":data.get('total_questions'),
+                                                                "next_question": data.get('next_question'),
+                                                                "scorecard": data.get('scorecard'),
+
+                                                                }),status=status.HTTP_200_OK)
 
         except Exception as e:
             return Response(error_response(message="Something went wrong",errors=str(e)),status=status.HTTP_500_INTERNAL_SERVER_ERROR)

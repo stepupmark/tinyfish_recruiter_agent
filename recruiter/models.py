@@ -78,6 +78,7 @@ class JobPosting(CommonModel):
 
 class JobApplication(CommonModel):
     job = models.ForeignKey(JobPosting,on_delete=models.CASCADE,related_name="applications",db_index=True)
+    application_id = models.CharField(max_length=100,null=True,blank=True,unique=True)
     user = models.ForeignKey(CustomUserModel,on_delete=models.CASCADE,related_name="user_job_application")
     resume = models.FileField(upload_to="resumes/")
     application_status = models.CharField(max_length=20,choices=ApplicationStatus.choices,default=ApplicationStatus.APPLIED)
@@ -97,6 +98,7 @@ class JobApplication(CommonModel):
 
 class InterviewSchedule(CommonModel):
     job = models.ForeignKey(JobPosting,on_delete=models.CASCADE,related_name="job_interviews")
+    interview_session_id = models.CharField(max_length=255,null=True,blank=True)
     application = models.OneToOneField(JobApplication,on_delete=models.CASCADE,related_name="job_application_interviews")
     candidate = models.ForeignKey(CustomUserModel,on_delete=models.CASCADE,related_name="candidate_interview")
 
@@ -105,6 +107,10 @@ class InterviewSchedule(CommonModel):
 
     interview_status = models.CharField(max_length=20,choices=InterviewStatus.choices,default=InterviewStatus.SCHEDULED)
     notes = models.TextField(null=True, blank=True)
+    interview_link= models.TextField(null=True,blank=True)
+    scored_card = models.CharField(max_length=200,null=True,blank=True)
+    clarity = models.CharField(max_length=10,null=True,blank=True)
+    confidence = models.CharField(max_length=10,null=True,blank=True)
 
 
     def __str__(self):
