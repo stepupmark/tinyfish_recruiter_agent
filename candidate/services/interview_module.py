@@ -41,4 +41,35 @@ def interview_resume_analysis(resume):
         }
     
 
-# def start_interview_process(session_id,selected_roles):
+def start_interview_process(session_id,candidate_role,custom_role=""):
+    try:
+
+        payload ={
+            "session_id":session_id,
+            "selected_role":candidate_role,
+            "is_custom_role": False,
+        }
+
+        response = requests.post(INTERVIEW_QUESTION_MODULE,json=payload)
+
+        return {"success":True,"data":response.json() if response.content else None}
+
+    except Exception as e:
+        return {"success":False,"error":str(e)}
+    
+
+def evaluate_interview_answer(session_id,answer=""):
+    try:
+        payload={
+            "session_id":session_id,
+            "answer":answer
+        }
+
+        response = requests.post(INTERVIEW_ANSWER_MODULE,json=payload)
+
+        return {"success":True,"data":response.json() if response.content else None}
+
+
+    except Exception as e:
+        return {"success":False,"error":str(e)}
+

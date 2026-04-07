@@ -53,3 +53,33 @@ class InterviewScheduleValidator(serializers.Serializer):
         if value < date.today():
             raise serializers.ValidationError("Interview date cannot be in the past")
         return value
+    
+
+
+class InterviewProcessValidator(serializers.Serializer):
+    session_id = serializers.CharField(required=True,allow_null=False,allow_blank=False,error_messages={
+        'required':'Session ID is Required',
+        'null':'Session ID cannot be null',
+        'blank':'Session ID cannot be Blank',
+    })
+
+    candidate_role = serializers.CharField(required=True,allow_null=False,allow_blank=False,error_messages={
+        'required':'Candidate Role is Required',
+        'null':'Candidate Role cannot be null',
+        'blank':'Candidate Role cannot be Blank',
+    })
+
+
+
+class AnswerEvaluationValidator(serializers.Serializer):
+    session_id = serializers.CharField(required=True,allow_null=False,allow_blank=False,error_messages={
+        'required':'Session ID is Required',
+        'null':'Session ID cannot be null',
+        'blank':'Session ID cannot be Blank',
+    })
+
+    answer = serializers.CharField(required=True,allow_null=False,allow_blank=False,error_messages={
+        'required':'Answer is Required',
+        'null':'Answer Role cannot be null',
+        'blank':'Answer Role cannot be Blank',
+    })

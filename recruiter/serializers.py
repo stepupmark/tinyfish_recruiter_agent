@@ -1,7 +1,9 @@
 from rest_framework import serializers
+from datetime import datetime
 from .models import (
         JobPosting,
         JobApplication,
+        InterviewSchedule
 
     )
 
@@ -43,6 +45,9 @@ class RecruiterJobApplicationSerializer(serializers.ModelSerializer):
     candidate_location = serializers.CharField(source="user.candidate_profile.location", read_only=True)
     previous_employment = serializers.CharField(source="user.candidate_profile.current_job_title", read_only=True)
     total_experience = serializers.CharField(source="user.candidate_profile.total_experience", read_only=True)
+    interview_datetime = serializers.SerializerMethodField()
+    interview_status = serializers.CharField(source="job_application_interviews.interview_status")
+    score_card = serializers.CharField(source="job_application_interviews.scored_card")
 
     class Meta:
         model = JobApplication
@@ -55,8 +60,21 @@ class RecruiterJobApplicationSerializer(serializers.ModelSerializer):
                     'candidate_location',
                     'previous_employment',
                     'total_experience',
+                    'application_status',
+                    'interview_datetime',
+                    'interview_status',
+                    'score_card',
 
                 ]
+        
+    def get_interview_datetime(self,obj):
+
+        interview_schedule = getattr(obj,"job_application_interviews",None)
+        if interview_schedule:
+            dt= datetime.combine(interview_schedule.interview_date,interview_schedule.interview_time)
+            return dt.strftime("%d %B %Y %I:%M %p")
+        
+        return None
         
     def get_candidate_resume(self,obj):
         request = self.context.get("request")
