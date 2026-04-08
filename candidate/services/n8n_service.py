@@ -9,6 +9,7 @@ env = environ.Env()
 
 N8N_MAIL_AUTOMATION = env('RESUME_ANALYSIS_WEBHOOK')
 INTERVIEW_SCHEDULE_WEBHOOK = env('INTERVIEW_SCHEDULE_WEBHOOK')
+RECRUITER_JD_ANALYSIS_WEBHOOK = env('JD_ANALYSIS_WEBHOOK')
 
 def  candidate_resume_analysis(resume_file,job_description_file):
     try:
@@ -58,6 +59,27 @@ def candidate_schedule_interview_workflow(resume_file,interview_datetime,applica
         response = requests.post(INTERVIEW_SCHEDULE_WEBHOOK,data=data,files=files)
 
         return {"success":True,"data":response.json() if response.content else None}
+
+
+    except Exception as e:
+        return Response(error_response(message="Something went Wrong",errors=str(e)),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+def recruiter_jd_analysis(job_description_file):
+    try:
+        files={}
+
+        if job_description_file:
+            content_type, _ = mimetypes.guess_type(job_description_file.name)
+            job_description_file.open('rb')
+
+            files["job_description"] = (
+                job_description_file.name,
+                job_description_file,
+                "application/pdf"
+            )
+            response = requests.post(RECRUITER_JD_ANALYSIS_WEBHOOK,files=files)
+
+            return {"status":True,"data":response.json() if response.content else None}
 
 
     except Exception as e:
