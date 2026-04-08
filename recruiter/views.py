@@ -19,6 +19,9 @@ from .serializers import (
         JobPostingSerializer,
         RecruiterJobApplicationSerializer,
     )
+from candidate.services.n8n_service import(
+    recruiter_jd_analysis,
+)
 
 # Create your views here.
 class RecruiterJobPostAPIView(APIView):
@@ -35,8 +38,24 @@ class RecruiterJobPostAPIView(APIView):
                 return Response(error_response(message="validation error",errors=validator.errors),status=status.HTTP_400_BAD_REQUEST)
             validated_data = validator.validated_data
 
-            job_posting_obj = JobPosting.objects.create(**validated_data,recruiter_id=user.recruiter.id)
-            return Response(success_response(message="Job Post Created Successfully",data={}),status=status.HTTP_201_CREATED)
+            job_description_file = validated_data.get('job_description_file')
+            
+            # N8N Workflow to jd analysis
+            jd_analysis = recruiter_jd_analysis(job_description_file)
+            job_description = jd_analysis['data']['overview'] if jd_analysis else None
+            skills_required = jd_analysis['data']['skills_text'] if jd_analysis else None
+
+            job_posting_obj = JobPosting.objects.create(**validated_data,
+                                                        job_description=job_description,
+                                                        skills_required=skills_required,
+                                                        recruiter_id=user.recruiter.id)
+
+            jd_analysis_data = jd_analysis.get("data",{})
+
+            return Response(success_response(message="Job Post Created Successfully",data={
+                                                                    "job_post":job_posting_obj.id,
+                                                                    "jd_analysis":jd_analysis_data,
+                                                                }),status=status.HTTP_201_CREATED)
             
 
         except Exception as e:
