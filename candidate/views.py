@@ -18,6 +18,7 @@ from recruiter.models import (
 from .serializers import (
         JobSuggestionsSerializer,
         JobApplicationSerializer,
+        ScheduledInterviewsSerializer,
     )
 from .validators import (
         JobApplicationValidator,
@@ -251,6 +252,7 @@ class CandidateInterviewAPIView(APIView):
 class CandidateScheduleInterviewAPIView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+    pagination_class = CustomPageNumberPagination
 
     def post(self,request):
         try:
@@ -290,6 +292,26 @@ class CandidateScheduleInterviewAPIView(APIView):
         except Exception as e:
             return Response(error_response(message="Something went wrong",errors=str(e)),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
+
+    
+
+    def get(self,request):
+        try:
+
+            user =request.user
+            scheduled_interviews = InterviewSchedule.objects.filter(candidate=user)
+
+            paginator = self.pagination_class()
+            paginated_data = paginator.paginate_queryset(scheduled_interviews,request)
+            serializer = ScheduledInterviewsSerializer(paginated_data,many=True,context={"request":request})
+            paginated_response = paginator.get_paginated_response(serializer.data)
+
+            return Response(success_response(message="Scheduled Interviews List",data=paginated_response.data),status=status.HTTP_200_OK)
+
+            
+
+        except Exception as e:
+            return Response(error_response(message="Something went wrong",errors=str(e)),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
