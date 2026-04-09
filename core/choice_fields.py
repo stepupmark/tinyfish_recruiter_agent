@@ -21,6 +21,7 @@ class EmploymentTypeChoices(models.TextChoices):
 class ApplicationStatus(models.TextChoices):
     APPLIED = 'applied', _('Applied')
     SHORTLISTED = 'shortlisted', _('Shortlisted')
+    INTERVIEW_SCHEDULED ='interview_scheduled',_('Interview_Scheduled')
     REJECTED = 'rejected', _('Rejected')
     HIRED = 'hired', _('Hired')
 

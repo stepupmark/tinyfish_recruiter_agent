@@ -64,3 +64,25 @@ class JobApplicationSerializer(serializers.ModelSerializer):
                 "time": interview.interview_time
             }
         return None
+    
+
+
+class ScheduledInterviewsSerializer(serializers.ModelSerializer):
+    job_title = serializers.CharField(source="job.job_title")
+    interview_date = serializers.DateField(format="%d %b %Y")
+    interview_time = serializers.TimeField(format="%I:%M %p")
+    job_application = serializers.CharField(source="application.id")
+
+
+    class Meta:
+        model = InterviewSchedule
+        fields =[
+            'job_title',
+            'job_application',
+            'interview_date',
+            'interview_time',
+            'scored_card',
+            'interview_link',
+            'interview_status',
+
+        ]

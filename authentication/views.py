@@ -8,6 +8,7 @@ from core.general import SerializerError
 from django.db import transaction
 from rest_framework import serializers
 from django.contrib.auth import authenticate
+from rest_framework.exceptions import ValidationError
 from authentication.models import(
                 CustomUserModel
 
@@ -96,8 +97,9 @@ class CandidateRegisterAPIView(APIView):
     def post(self,request):
         try:
             validator = CandidateRegistrationValidator(data=request.data)
-            if not validator.is_valid():
-                return Response(error_response(message="validation error",errors=validator.errors),status=status.HTTP_400_BAD_REQUEST)
+            validator.is_valid(raise_exception=True)
+            # if not validator.is_valid():
+            #     return Response(error_response(message="validation error",errors=validator.errors),status=status.HTTP_400_BAD_REQUEST)
             validated_data = validator.validated_data
             with transaction.atomic():
                 customer_user = CustomUserModel.objects.create(
@@ -119,7 +121,16 @@ class CandidateRegisterAPIView(APIView):
                 )
 
                 return Response(success_response(message="Candidate registered successfully",data={"user_id":customer_user.id}),status=status.HTTP_201_CREATED)
-
+            
+        except ValidationError as e:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Validation Error",
+                    "errors": e.detail   # ✅ Proper structured errors
+                },
+                status=400
+            )
 
         except Exception as e:
             return Response(error_response(message="Something went wrong",errors=str(e)),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
