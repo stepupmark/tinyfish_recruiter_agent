@@ -19,6 +19,7 @@ from .serializers import (
         JobSuggestionsSerializer,
         JobApplicationSerializer,
         ScheduledInterviewsSerializer,
+        CandidateProfileSerializer,
     )
 from .validators import (
         JobApplicationValidator,
@@ -57,7 +58,7 @@ class CandidateJobSuggestions(APIView):
 
     def get(self,request):
         try:
-            job_suggestions = JobPosting.objects.filter(is_active=True,status=UserStatusChoices.ACTIVE)
+            job_suggestions = JobPosting.objects.filter(is_active=True,status=UserStatusChoices.ACTIVE).order_by('-created_at')
 
             filterset = JobSuggestionsFilter(request.GET,queryset=job_suggestions)
             if filterset.is_valid():
@@ -356,6 +357,7 @@ class CandidateInterviewProcessBeginAPIView(APIView):
                                                                 "question_no":1,
                                                                 "question":question_data['question'],
                                                                 "difficulty_level":question_data['difficulty'],
+                                                                "question_type":question_data['type'],
                                                                 # "interview_process":interview_process,
                                                             }),status=status.HTTP_200_OK)
 
@@ -406,6 +408,8 @@ class AnswerEvaluationAPIView(APIView):
                                                                 # "response":evaluate_answer,
                                                                 "question_no":data.get('current_index'),
                                                                 "total_questions":data.get('total_questions'),
+                                                                "question_type":data.get('next_question',{}).get('type',{}),
+                                                                "difficulty_level":data.get('next_question',{}).get('difficulty',{}),
                                                                 "next_question": data.get('next_question'),
                                                                 "scorecard": data.get('scorecard'),
 
@@ -455,7 +459,7 @@ class CandidateProfileAPIView(APIView):
             candidate_profile = CustomUserModel.objects.filter(id=user.id).first()
             if not  candidate_profile:
                 return Response(error_response(message="No Candidate Profile Found",errors="no profile found"),status=status.HTTP_400_BAD_REQUEST)
-            serializer = RecruiterProfileSerializer(candidate_profile,context={"request":request})
+            serializer = CandidateProfileSerializer(candidate_profile,context={"request":request})
 
             return  Response(success_response(message="Candidate Profile",data=serializer.data),status=status.HTTP_200_OK)
         

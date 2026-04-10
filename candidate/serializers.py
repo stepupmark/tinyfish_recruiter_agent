@@ -2,6 +2,9 @@ from rest_framework import serializers
 from .models import (
         CandidateProfile,
     )
+from authentication.models import (
+    CustomUserModel,
+)
 
 from recruiter.models import (
         JobApplication,
@@ -40,6 +43,7 @@ class JobSuggestionsSerializer(serializers.ModelSerializer):
     
 class JobApplicationSerializer(serializers.ModelSerializer):
     job_title = serializers.CharField(source="job.job_title",read_only=True)
+    date_of_applied = serializers.SerializerMethodField()
     is_interview_scheduled = serializers.SerializerMethodField()
     interview_date = serializers.SerializerMethodField()
 
@@ -50,8 +54,14 @@ class JobApplicationSerializer(serializers.ModelSerializer):
             'job_title',
             'is_interview_scheduled',
             'interview_date',
-            'application_status'
+            'application_status',
+            'date_of_applied'
         ]
+
+    def get_date_of_applied(self, obj):
+        if obj.created_at:
+            return obj.created_at.strftime("%d %B %Y")
+        return None
 
     def get_is_interview_scheduled(self,obj):
         return InterviewSchedule.objects.filter(application=obj.id).exists()
@@ -88,3 +98,25 @@ class ScheduledInterviewsSerializer(serializers.ModelSerializer):
             'interview_status',
 
         ]
+
+
+class CandidateProfileSerializer(serializers.ModelSerializer):
+    profile = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CustomUserModel
+        fields = [
+            'full_name',
+            'username',
+            'email',
+            'mobile',
+            'profile',
+
+        ]
+
+    def get_profile(self,obj):
+        request = self.context.get('request')
+        candidate_profile = CandidateProfile.objects.filter(user=obj).first()
+        if candidate_profile.profile_photo:
+            return request.build_absolute_uri(candidate_profile.profile_photo.url)
+        return None
