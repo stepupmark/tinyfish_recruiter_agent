@@ -94,8 +94,8 @@ class RecruiterJobPostAPIView(APIView):
         
 
 class  RecruiterJobPostDetailAPIView(APIView):
-    authentication_classes = []
-    permission_classes =[]
+    authentication_classes = [JWTAuthentication]
+    permission_classes =[IsAuthenticated]
 
     def get(self,request,id):
         try:

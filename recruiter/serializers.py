@@ -14,6 +14,7 @@ from authentication.models import(
 class JobPostingSerializer(serializers.ModelSerializer):
     recruiter = serializers.CharField(source="recruiter.user.username",read_only=True)
     company = serializers.CharField(source="recruiter.company_name",read_only=True)
+    is_applied = serializers.SerializerMethodField()
     applications_count = serializers.SerializerMethodField()
     # job_description_file = serializers.SerializerMethodField()
 
@@ -31,8 +32,16 @@ class JobPostingSerializer(serializers.ModelSerializer):
                     'salary_range',
                     'skills_required',
                     'applications_count',
+                    'is_applied',
                     'status',
                 ]
+        
+    def get_is_applied(self,obj):
+        request = self.context.get('request')
+        if JobApplication.objects.filter(job=obj,user=request.user).exists():
+            return True
+        return False
+
         
     def get_applications_count(self,obj):
         applications=JobApplication.objects.filter(job=obj).count()
