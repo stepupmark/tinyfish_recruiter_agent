@@ -6,11 +6,15 @@ from .models import (
         InterviewSchedule
 
     )
+from authentication.models import(
+    CustomUserModel
+)
 
 
 class JobPostingSerializer(serializers.ModelSerializer):
     recruiter = serializers.CharField(source="recruiter.user.username",read_only=True)
     company = serializers.CharField(source="recruiter.company_name",read_only=True)
+    applications_count = serializers.SerializerMethodField()
     # job_description_file = serializers.SerializerMethodField()
 
     class Meta:
@@ -26,8 +30,15 @@ class JobPostingSerializer(serializers.ModelSerializer):
                     'employment_type',
                     'salary_range',
                     'skills_required',
+                    'applications_count',
                     'status',
                 ]
+        
+    def get_applications_count(self,obj):
+        applications=JobApplication.objects.filter(job=obj).count()
+        if applications:
+            return applications
+        return 0
 
 
     # def get_job_description_file(self,obj):
@@ -81,3 +92,17 @@ class RecruiterJobApplicationSerializer(serializers.ModelSerializer):
         if obj.resume:
             return request.build_absolute_uri(obj.resume.url)
         return None
+    
+
+
+class RecruiterProfileSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = CustomUserModel
+        fields = [
+            'full_name',
+            'username',
+            'email',
+            'mobile', 
+
+        ]

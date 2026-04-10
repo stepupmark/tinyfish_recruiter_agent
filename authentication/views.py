@@ -190,6 +190,7 @@ class LoginAPIView(APIView):
             return Response(
                 success_response(message="Login successful",data={
                         "user_id": user_obj.id,
+                        "full_name":user_obj.full_name,
                         "email": user_obj.email,
                         "role": user_obj.role,
                         "tokens": tokens

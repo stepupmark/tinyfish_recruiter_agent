@@ -21,11 +21,11 @@ class RecruiterJobPostValidator(serializers.Serializer):
     
     })
 
-    job_location = serializers.CharField(required=True,allow_null=False,allow_blank=False,error_messages={
-        'required':'Job Location is Required',
-        'null':'Job Location cannot be null',
-        'blank':'Job Location cannot be Blank',
-    })
+    # job_location = serializers.CharField(required=True,allow_null=False,allow_blank=False,error_messages={
+    #     'required':'Job Location is Required',
+    #     'null':'Job Location cannot be null',
+    #     'blank':'Job Location cannot be Blank',
+    # })
 
     employment_type = serializers.CharField(required=True,allow_null=False,allow_blank=False,error_messages={
         'required':'Employment Type is Required',

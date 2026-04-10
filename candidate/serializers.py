@@ -68,6 +68,7 @@ class JobApplicationSerializer(serializers.ModelSerializer):
 
 
 class ScheduledInterviewsSerializer(serializers.ModelSerializer):
+    candidate_name = serializers.CharField(source="candidate.full_name")
     job_title = serializers.CharField(source="job.job_title")
     interview_date = serializers.DateField(format="%d %b %Y")
     interview_time = serializers.TimeField(format="%I:%M %p")
@@ -77,6 +78,7 @@ class ScheduledInterviewsSerializer(serializers.ModelSerializer):
     class Meta:
         model = InterviewSchedule
         fields =[
+            'candidate_name',
             'job_title',
             'job_application',
             'interview_date',
