@@ -36,6 +36,12 @@ from .services.interview_module import (
         start_interview_process,
         evaluate_interview_answer,
     )
+from recruiter.serializers import (
+    RecruiterProfileSerializer
+)
+from authentication.models import (
+    CustomUserModel,
+)
 from core.choice_fields import (
                     EmploymentTypeChoices,
                     UserStatusChoices,
@@ -51,7 +57,7 @@ class CandidateJobSuggestions(APIView):
 
     def get(self,request):
         try:
-            job_suggestions = JobPosting.objects.filter(is_active=True)
+            job_suggestions = JobPosting.objects.filter(is_active=True,status=UserStatusChoices.ACTIVE)
 
             filterset = JobSuggestionsFilter(request.GET,queryset=job_suggestions)
             if filterset.is_valid():
@@ -270,6 +276,8 @@ class CandidateScheduleInterviewAPIView(APIView):
             job_application = JobApplication.objects.filter(id=validated_data['job_application']).first()
             if not job_application:
                 return Response(error_response(message="Invalid Job Application Id",errors="invalid job application"),status=status.HTTP_400_BAD_REQUEST)
+            elif job_application.application_status==ApplicationStatus.REJECTED:
+                return Response(error_response(message="Interview scheduling is not available as your application was not selected.",errors="Application rejected"),status=status.HTTP_403_FORBIDDEN)
             
             resume_file = job_application.resume
             interview_datetime = datetime.combine(validated_data['interview_date'],validated_data['interview_time']).strftime("%Y-%m-%d %H:%M")
@@ -277,13 +285,17 @@ class CandidateScheduleInterviewAPIView(APIView):
             candidate_schedule_interview = candidate_schedule_interview_workflow(resume_file,interview_datetime,str(job_application.id))
             candidate_interview_data = candidate_schedule_interview.get("data",{})
             
-            schedule_interview = InterviewSchedule.objects.create(application_id=job_application.id,
-                                                                  job_id=job_application.job.id,
-                                                                  candidate=user,
-                                                                  interview_date=validated_data['interview_date'],
-                                                                  interview_time=validated_data['interview_time'],
-                                                                  interview_link = candidate_interview_data.get("interview_link"),
-                                                                  )
+            with transaction.atomic():
+                schedule_interview = InterviewSchedule.objects.create(application_id=job_application.id,
+                                                                    job_id=job_application.job.id,
+                                                                    candidate=user,
+                                                                    interview_date=validated_data['interview_date'],
+                                                                    interview_time=validated_data['interview_time'],
+                                                                    interview_link = candidate_interview_data.get("interview_link"),
+                                                                    )
+                job_application.application_status=ApplicationStatus.INTERVIEW_SCHEDULED
+                job_application.save()
+
 
             return Response(success_response(message="Already Interview Scheduled",data={"id":schedule_interview.id,"interview_link":candidate_interview_data.get("interview_link")}),status=status.HTTP_200_OK)
             
@@ -384,6 +396,12 @@ class AnswerEvaluationAPIView(APIView):
                 interview_schedule.interview_status = InterviewStatus.COMPLETED
                 interview_schedule.save()
 
+                # Updated Job Application to interview Completed
+                job_application = JobApplication.objects.filter(id=interview_schedule.application.id).first()
+                job_application.application_status=ApplicationStatus.INTERVIEW_COMPLETED
+                job_application.save()
+
+
             return Response(success_response(message="Interview Process",data={
                                                                 # "response":evaluate_answer,
                                                                 "question_no":data.get('current_index'),
@@ -395,3 +413,51 @@ class AnswerEvaluationAPIView(APIView):
 
         except Exception as e:
             return Response(error_response(message="Something went wrong",errors=str(e)),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
+class CandidateDashboardAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self,request):
+        try:
+            user =request.user
+            print(user.full_name)
+            candidate_cards= {}
+
+            # Candidate Side
+            job_applications = JobApplication.objects.filter(user=user)
+            shortlisted_applications_count = job_applications.filter(application_status__in=[ApplicationStatus.SHORTLISTED,ApplicationStatus.INTERVIEW_SCHEDULED]).count()
+            rejected_applications_count = job_applications.filter(application_status=ApplicationStatus.SHORTLISTED).count()
+            scheduled_interviews = job_applications.filter(application_status=ApplicationStatus.INTERVIEW_SCHEDULED).count()
+            total_applications = job_applications.filter(user=user).count()
+
+            candidate_cards['total_applications']=total_applications
+            candidate_cards['shortlisted_applications_count']=shortlisted_applications_count
+            candidate_cards['rejected_applications_count']=rejected_applications_count
+            candidate_cards['scheduled_interviews']=scheduled_interviews
+
+            return Response(success_response(message="Candidate Dashboard Cards.",data=candidate_cards),status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(error_response(message="Something went wrong",errors=str(e)),status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+class CandidateProfileAPIView(APIView):
+    authentication_classes =[JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self,request):
+        try:
+            user = request.user
+
+            candidate_profile = CustomUserModel.objects.filter(id=user.id).first()
+            if not  candidate_profile:
+                return Response(error_response(message="No Candidate Profile Found",errors="no profile found"),status=status.HTTP_400_BAD_REQUEST)
+            serializer = RecruiterProfileSerializer(candidate_profile,context={"request":request})
+
+            return  Response(success_response(message="Candidate Profile",data=serializer.data),status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response(error_response(message="Something Went wrong",errors=str(e)),status=status.HTTP_500_INTERNAL_SERVER_ERROR)

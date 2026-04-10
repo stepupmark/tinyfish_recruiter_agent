@@ -15,13 +15,14 @@ class UserStatusChoices(models.TextChoices):
 class EmploymentTypeChoices(models.TextChoices):
     FULLTIME = 'full_time', _('Full Time')
     PARTTIME = 'part_time', _('Part Time')
-    INTERNSHIP = 'internship', _('Intership')
+    INTERNSHIP = 'internship', _('Internship')
 
 
 class ApplicationStatus(models.TextChoices):
     APPLIED = 'applied', _('Applied')
     SHORTLISTED = 'shortlisted', _('Shortlisted')
     INTERVIEW_SCHEDULED ='interview_scheduled',_('Interview_Scheduled')
+    INTERVIEW_COMPLETED ='interview_completed',_('Interview_Completed')
     REJECTED = 'rejected', _('Rejected')
     HIRED = 'hired', _('Hired')
 
