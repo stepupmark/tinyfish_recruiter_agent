@@ -25,7 +25,7 @@ def interview_resume_analysis(resume):
             response = requests.post(
                 INTERVIEW_MODULE_MODEL,
                 files=files,
-                timeout=10  # ✅ important
+                timeout=30  # ✅ important
             )
 
         return {

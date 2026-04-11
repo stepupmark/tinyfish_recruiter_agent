@@ -355,7 +355,8 @@ class CandidateInterviewProcessBeginAPIView(APIView):
             return Response(success_response(message="Interview Process Begins",data={
                                                                 "total_questions":interview_process['data']['total_questions'],
                                                                 "question_no":1,
-                                                                "question":question_data['question'],
+                                                                # "question":question_data['question'],
+                                                                "question":interview_process['data']['question'],
                                                                 "difficulty_level":question_data['difficulty'],
                                                                 "question_type":question_data['type'],
                                                                 # "interview_process":interview_process,
